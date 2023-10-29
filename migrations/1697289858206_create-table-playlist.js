@@ -13,17 +13,13 @@ exports.up = pgm => {
             unique: false,
             notNull: true,
         },
-        username: {
+        user_id: {
             type: 'VARCHAR(50)',
-            unique: false,
-            notNull: true,
-        },
-        songid: {
-            type: 'VARCHAR(50)',
-            unique: false,
+            references: 'users(id)',
             notNull: true,
         }
     });
+
 };
 
 exports.down = pgm => {

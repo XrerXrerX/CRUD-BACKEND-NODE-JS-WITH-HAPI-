@@ -32,52 +32,34 @@ class AlbumHandler {
     }
 
     getAllAlbumsHandler = async (request, h) => {
-        try {
-            // const { id: credentialId } = request.auth.credentials;
-            // const albums = await this._service.getAllAlbums(credentialId);
-
-
-
-            const albums = await this._service.getAllAlbums();
-
-            if (albums.length === 0) {
-                const response = h.response({
-                    status: 'fail',
-                    message: 'No albums found',
-                });
-                response.code(404);
-                return response;
-            }
-
-            const response = h.response({
-                status: 'success',
-                data: {
-                    albums,
-                },
-            });
-            response.code(200);
-            return response;
-        } catch (error) {
+        // const { id: credentialId } = request.auth.credentials;
+        // const albums = await this._service.getAllAlbums(credentialId);
+        const albums = await this._service.getAllAlbums();
+        if (albums.length === 0) {
             const response = h.response({
                 status: 'fail',
-                message: error.message,
+                message: 'No albums found',
             });
-            response.code(500); // Return a 500 status code for internal errors
+            response.code(404);
             return response;
         }
+        const response = h.response({
+            status: 'success',
+            data: {
+                albums,
+            },
+        });
+        response.code(200);
+        return response;
     }
 
     getAlbumByIdHandler = async (request, h) => {
         try {
             const { id } = request.params;
-
             // const { id: credentialId } = request.auth.credentials;
-
             // await this._service.verifyNoteOwner(id, credentialId);
-
             const album = await this._service.getAlbumById(id);
             // const songs = await songService.getSongsByAlbumId(albumId);
-
             const song = await this._songsService.getAlbumWithSongById(id);
             const songs = {
                 ...album,

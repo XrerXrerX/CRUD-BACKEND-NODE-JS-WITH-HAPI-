@@ -6,7 +6,6 @@ const mapDBToModel = ({
     updated_at,
 }) => ({
     id,
-    albumId: id,
     name,
     year,
     createdAt: created_at,

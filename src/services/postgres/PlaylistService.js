@@ -10,9 +10,18 @@ class PlaylistService {
     }
 
     async addPlaylist(name, authId) {
+        // const queryuser = {
+        //     text: 'SELECT * FROM users WHERE id = $1',
+        //     values: [authId],
+        // };
+
+        // const quser = await this._pool.query(queryuser);
+        // const username = quser.rows[0].username;
+
+
         const playlistId = `playlist-${nanoid(16)}`;
         const query = {
-            text: 'INSERT INTO playlist(id, name , username) VALUES($1, $2 ,$3) RETURNING id',
+            text: 'INSERT INTO playlist(id, name , user_id ) VALUES($1, $2 ,$3 ) RETURNING id',
             values: [playlistId, name, authId],
         };
 
@@ -28,6 +37,7 @@ class PlaylistService {
 
     async addSongPlaylist(playlistid, songid, authId) {
 
+
         // Cek apakah songid memiliki id yang sama di tabel songs
         const songCheckQuery = {
             text: 'SELECT * FROM songs WHERE id = $1',
@@ -40,9 +50,10 @@ class PlaylistService {
         }
 
         const userCheckQuery = {
-            text: 'SELECT * FROM playlist WHERE id = $1 AND username = $2',
+            text: 'SELECT * FROM playlist WHERE id = $1 AND user_id = $2',
             values: [playlistid, authId],
         };
+
         const UserCheckResult = await this._pool.query(userCheckQuery);
         if (UserCheckResult.rows.length == 0) {
             // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
@@ -50,25 +61,24 @@ class PlaylistService {
         }
 
         const arrsongCheckQuery = {
-            text: 'SELECT * FROM playlist WHERE $1 = ANY(songid)',
+            text: 'SELECT * FROM playlist_songs WHERE $1 = song_id',
             values: [songid],
         };
+
         const arrsongCheckResult = await this._pool.query(arrsongCheckQuery);
         if (arrsongCheckResult.rows.length) {
             // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
             throw new ClientError('Song sudah ada di dalam playlist', 400);
         }
 
-
-
         // Jika songid ditemukan, tambahkan lagu ke playlist
         const query = {
-            text: 'UPDATE playlist SET songid = array_append(songid, $3) WHERE id = $1 AND username = $2 RETURNING id',
-
-            values: [playlistid, authId, songid,],
+            text: 'INSERT INTO playlist_songs (playlist_id, song_id) VALUES ($1,$2) RETURNING id',
+            values: [playlistid, songid]
         };
 
         const result = await this._pool.query(query);
+
 
 
         if (result.rows[0].id == false) {
@@ -80,93 +90,156 @@ class PlaylistService {
 
 
     async getPlaylists(authId) {
-        const query = {
-            text: 'SELECT * FROM playlist WHERE username = $1',
-            values: [authId],
-        };
 
-
-        const result = await this._pool.query(query);
-        // const result = await this._pool.query('SELECT * FROM playlist');
-        return result.rows.map((row) => ({
-            id: row.id,
-            name: row.name,
-            username: row.username,
-        }));
-    }
-
-    async getPlaylistsSong(playlistid, authId) {
-
-        const userCheckQuery = {
+        const queryuser = {
             text: 'SELECT * FROM users WHERE id = $1',
             values: [authId],
         };
-        const UserCheckResult = await this._pool.query(userCheckQuery);
-        const username = UserCheckResult.rows[0].username;
-        if (UserCheckResult.rows.length == 0) {
-            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
-            throw new ClientError('authentikasi playlist gagal', 403);
-        }
+
+        const quser = await this._pool.query(queryuser);
+        const username = quser.rows[0].username;
+
         const query = {
-            text: 'SELECT * FROM playlist WHERE id = $1 AND username = $2',
-            values: [playlistid, authId],
+            text: 'SELECT * FROM playlist WHERE user_id = $1',
+            values: [authId],
         };
+
         const result = await this._pool.query(query);
-        if (result.rows.songid == 0) {
-            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
-            throw new InvariantError('Song Tidak Ditemukan', 403);
-        }
-        // console.log(result.rows[0].songid);
         // const result = await this._pool.query('SELECT * FROM playlist');
         return result.rows.map((row) => ({
             id: row.id,
             name: row.name,
             username,
-            songs: row.songid
         }));
+    }
+
+    async getPlaylistsSong(playlistid, authId) {
+        //mengecek playlist
+        const nameCheckQuery = {
+            text: 'SELECT * FROM playlist WHERE id = $1',
+            values: [playlistid],
+        };
+        const nameCheckResult = await this._pool.query(nameCheckQuery);
+
+        if (nameCheckResult.rows.length == 0) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new ClientError('Playlist tidak ditemukan', 404);
+        }
 
 
+
+        const userCheckQuery = {
+            text: 'SELECT * FROM playlist WHERE user_id = $1',
+            values: [authId],
+        };
+        const UserCheckResult = await this._pool.query(userCheckQuery);
+
+        if (UserCheckResult.rows.length == 0) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new ClientError('authorization gagal', 403);
+        }
+        if (UserCheckResult.rows[0].user_id != authId) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new ClientError('authentikasi playlist gagal', 403);
+        }
+
+
+
+
+
+
+        const userCheckQuery2 = {
+            text: 'SELECT * FROM playlist_songs WHERE playlist_id = $1',
+            values: [playlistid],
+        };
+        const UserCheckResult2 = await this._pool.query(userCheckQuery2);
+
+        const songIds = UserCheckResult2.rows.map(row => row.song_id);
+        if (UserCheckResult2.rows.length == 0) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new ClientError('playlist tidak ditemukan .', 404);
+        }
+        const query = {
+            text: 'SELECT * FROM playlist_songs WHERE playlist_id = $1',
+            values: [playlistid],
+        };
+        const result = await this._pool.query(query);
+
+
+        if (result.rows.length == 0) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new InvariantError('Song Tidak Ditemukan', 403);
+        }
+        const userquery = {
+            text: 'SELECT * FROM users WHERE id = $1',
+            values: [authId],
+        };
+        const usernamequery = await this._pool.query(userquery);
+
+        const username = usernamequery.rows[0].username;
+        const title = nameCheckResult.rows[0].name
+
+        // const result = await this._pool.query('SELECT * FROM playlist');
+        return UserCheckResult2.rows.map((row) => ({
+            id: playlistid,
+            name: title,
+            username,
+            songs: songIds
+        }));
     }
 
     async deleteSongInPlaylistById(authId, playlistid, songid) {
-
-        const query = {
-            text: 'UPDATE playlist SET songid = array_remove(songid, $3) WHERE id = $2 AND username = $1 RETURNING id',
-            values: [authId, playlistid, songid],
+        const userCheckQuery = {
+            text: 'SELECT * FROM playlist WHERE user_id = $1',
+            values: [authId],
         };
-
-        const result = await this._pool.query(query);
-
-        if (result.rows.length === 0) {
+        const UserCheckResult = await this._pool.query(userCheckQuery);
+        if (UserCheckResult.rows.length == 0) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new ClientError('authorization gagal', 403);
+        }
+        if (UserCheckResult.rows[0].user_id != authId) {
+            // Jika songid tidak ditemukan di tabel songs, lempar kesalahan
+            throw new ClientError('authentikasi playlist gagal', 403);
+        }
+        const findsongs = {
+            text: 'SELECT * FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2',
+            values: [playlistid, songid],
+        };
+        const resultfindsongs = await this._pool.query(findsongs);
+        const id = resultfindsongs.rows[0].song_id
+        if (resultfindsongs.rows.length === 0) {
             throw new ClientError('songs gagal dihapus. Id tidak ditemukan', 403);
         }
-
-        return result.rows[0].id;
+        const query = {
+            text: 'DELETE FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2',
+            values: [playlistid, songid]
+        };
+        await this._pool.query(query);
+        return id;
     }
 
     async deletePlaylistById(playlistid, authId) {
-
         const queryuser = {
             text: 'SELECT * FROM playlist WHERE id = $1',
             values: [playlistid,]
         };
-
         const user = await this._pool.query(queryuser);
-        if (user.rows[0].username != authId) {
-            throw new ClientError('songs gagal dihapus. Id tidak ditemukan', 403);
+        const id = user.rows[0].id;
+        if (user.rows[0].user_id != authId) {
+            throw new ClientError('authorization gagal', 403);
         };
-
+        if (user.rows[0].length == 0) {
+            throw new ClientError('PLaylist gagal dihapus. Id tidak ditemukan', 404);
+        };
         const query = {
             text: 'DELETE FROM playlist WHERE id = $1',
             values: [playlistid,]
         };
-        const result = await this._pool.query(query);
-        if (result.rows[0] != undefined) {
-            throw new ClientError('songs gagal dihapus playlist tidak ada', 403);
-        }
-        return result.rows;
+        await this._pool.query(query);
+
+        return id;
     }
 }
-
 module.exports = PlaylistService;
 

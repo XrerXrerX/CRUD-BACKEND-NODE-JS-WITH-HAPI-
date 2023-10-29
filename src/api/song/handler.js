@@ -114,9 +114,9 @@ class SongsHandler {
         try {
             const { id } = request.params;
             this._songsvalidator.validateSongPayload(request.payload);
+            const { title, year, genre, performer, duration, } = request.payload;
+            const updatedSong = await this._service.updateSongById({ id, title, year, genre, performer, duration });
 
-            const { title, year, genre, performer, duration, albumId } = request.payload;
-            const updatedSong = await this._service.updateSongById(id, { title, year, genre, performer, duration, albumId });
 
             if (updatedSong) {
                 const response = h.response({

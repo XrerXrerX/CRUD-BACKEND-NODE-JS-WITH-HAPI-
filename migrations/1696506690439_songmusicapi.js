@@ -26,11 +26,12 @@ exports.up = (pgm) => {
         },
         duration: {
             type: 'INTEGER',
-            notNull: true,
+            notNull: false,
         },
-        albumid: {
+        album_id: {
             type: 'VARCHAR(50)',
-            notNull: true,
+            references: 'albums(id)', // Menunjukkan foreign key ke tabel albums
+            notNull: false,
         },
         created_at: {
             type: 'TEXT',

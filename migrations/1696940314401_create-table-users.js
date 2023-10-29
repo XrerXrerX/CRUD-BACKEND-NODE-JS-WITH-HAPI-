@@ -21,15 +21,6 @@ exports.up = (pgm) => {
             type: 'TEXT',
             notNull: true,
         }
-        ,
-        accesstoken: {
-            type: 'TEXT',
-            notNull: true,
-        },
-        refreshtoken: {
-            type: 'TEXT',
-            notNull: true,
-        },
     });
 };
 

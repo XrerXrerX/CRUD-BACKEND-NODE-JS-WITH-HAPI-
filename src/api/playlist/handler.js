@@ -14,6 +14,7 @@ class PlaylistHandler {
         const { name } = request.payload;
         const authId = request.auth.credentials.id;
 
+
         const playlistId = await this._service.addPlaylist(name, authId);
 
 
@@ -31,15 +32,14 @@ class PlaylistHandler {
     postSongToPlaylistHandler = async (request, h) => {
 
         this._songvalidator.validatesongPlaylistPayload(request.payload);
-        const playlistid = request.params.id
+        const playlistid = request.params.id;
         const songid = request.payload.songId;
         const authId = request.auth.credentials.id;
-
         const playlistId = await this._service.addSongPlaylist(playlistid, songid, authId);
 
         const response = h.response({
             status: 'success',
-            message: `Playlist berhasil ditambahkan. Playlist ID: ${playlistId}`,
+            message: `songs berhasil ditambahkan. Playlist ID: ${playlistId}`,
 
 
         });
@@ -62,65 +62,58 @@ class PlaylistHandler {
 
 
     getSongPlaylistsByIdHandler = async (request, h) => {
-        try {
 
-            const authId = request.auth.credentials.id;
-            const playlistid = request.params.id
-            const getplaylist = await this._service.getPlaylistsSong(playlistid, authId);
-            if (getplaylist[0] === undefined) {
-                const response = h.response({
-                    status: 'fail',
-                    message: 'song tidak ditemukan didalam playlist',
-                });
-                response.code(403);
-                return response;
-            }
+        const authId = request.auth.credentials.id;
+        const playlistid = request.params.id;
 
-
-            const songIds = getplaylist[0].songs;
-            if (songIds === 0) {
-                const response = h.response({
-                    status: 'fail',
-                    message: 'tidak ada song di dalam playlist ini',
-                });
-                response.code(404);
-                return response;
-            }
-            const songs = [];
-            for (const songId of songIds) {
-                const song = await this._songsService.getSongByIdplaylist(songId);
-                if (song) {
-                    songs.push((song));
-                }
-            }
-            getplaylist[0].songs = songs; // Replace playlists[0].songs with the updated songs array
-            const playlist = getplaylist[0];
-            // Wrap songs in an array for each playlist
-            if (playlist.length === 0) {
-                const response = h.response({
-                    status: 'fail',
-                    message: 'Playlist tidak ditemukan',
-                });
-                response.code(404);
-                return response;
-            }
-
-            const response = h.response({
-                status: 'success',
-                data: {
-                    playlist,
-                },
-            });
-            response.code(200);
-            return response;
-        } catch (error) {
+        const getplaylist = await this._service.getPlaylistsSong(playlistid, authId);
+        if (getplaylist[0] === undefined) {
             const response = h.response({
                 status: 'fail',
-                message: error.message,
+                message: 'song tidak ditemukan didalam playlist',
             });
-            response.code(500); // Return a 500 status code for internal errors
+            response.code(403);
             return response;
         }
+
+
+        const songIds = getplaylist[0].songs;
+        if (songIds === 0) {
+            const response = h.response({
+                status: 'fail',
+                message: 'tidak ada song di dalam playlist ini',
+            });
+            response.code(404);
+            return response;
+        }
+        const songs = [];
+        for (const songId of songIds) {
+            const song = await this._songsService.getSongByIdplaylist(songId);
+            if (song) {
+                songs.push((song));
+            }
+        }
+        getplaylist[0].songs = songs; // Replace playlists[0].songs with the updated songs array
+        const playlist = getplaylist[0];
+        // Wrap songs in an array for each playlist
+        if (playlist.length === 0) {
+            const response = h.response({
+                status: 'fail',
+                message: 'Playlist tidak ditemukan',
+            });
+            response.code(404);
+            return response;
+        }
+
+        const response = h.response({
+            status: 'success',
+            data: {
+                playlist,
+            },
+        });
+        response.code(200);
+        return response;
+
     }
     deleteSongInPlaylistsByIdHandler = async (request, h) => {
         this._songvalidator.validatesongPlaylistPayload(request.payload);
@@ -133,7 +126,7 @@ class PlaylistHandler {
             const response = h.response({
                 status: 'success',
 
-                message: 'songs berhasil dihapus', // Pesan sesuai permintaan Anda
+                message: `songs berhasil dihapus. dengan song_ID: ${result}`, // Pesan sesuai permintaan Anda
 
             });
             response.code(200); // Mengatur status code ke 201 (OK)
@@ -156,7 +149,7 @@ class PlaylistHandler {
         if (result) {
             const response = h.response({
                 status: 'success',
-                message: 'songs berhasil dihapus', // Pesan sesuai permintaan Anda
+                message: 'Playlist berhasil dihapus', // Pesan sesuai permintaan Anda
             });
             response.code(200); // Mengatur status code ke 201 (OK)
             return response;

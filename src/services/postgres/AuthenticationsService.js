@@ -6,23 +6,19 @@ class AuthenticationsService {
     constructor() {
         this._pool = new Pool();
     }
-    async addRefreshToken(accessToken, username, refreshToken) {
+    async addRefreshToken(token) {
         const query = {
-            text: 'UPDATE users SET accesstoken = $1 , refreshtoken = $2 WHERE username = $3',
-            values: [accessToken, refreshToken, username],
+            text: 'INSERT INTO authentications VALUES($1)',
+            values: [token],
         };
+
         await this._pool.query(query);
     }
-
-    async verifyRefreshToken(refreshToken) {
+    async verifyRefreshToken(token) {
         const query = {
-            text: 'SELECT * FROM users WHERE refreshtoken = $1',
-            values: [refreshToken],
+            text: 'SELECT token FROM authentications WHERE token = $1',
+            values: [token],
         };
-
-
-
-
         const result = await this._pool.query(query);
         if (!result.rows.length) {
             throw new InvariantError('Refresh token tidak valid');
@@ -30,18 +26,15 @@ class AuthenticationsService {
         // if (refreshToken == result.rows[0].accesstoken) {
         //     throw new InvariantError('Refresh token tidak valid');
         // }
-
-
-
     }
-    async deleteRefreshToken(refreshToken) {
+    async deleteRefreshToken(token) {
         const query = {
-            text: 'DELETE FROM users WHERE refreshtoken = $1',
-            values: [refreshToken],
+            text: 'DELETE FROM authentications WHERE token = $1',
+            values: [token],
         };
+
         await this._pool.query(query);
     }
-
 }
 
 module.exports = AuthenticationsService;

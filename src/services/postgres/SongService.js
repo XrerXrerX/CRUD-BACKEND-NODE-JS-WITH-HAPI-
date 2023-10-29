@@ -14,12 +14,9 @@ class SongsService {
         const id = nanoid(16);
         const created_at = new Date().toISOString();
         const updated_at = created_at;
-        if (albumId == undefined) {
-            albumId = id;
-        }
 
         const query = {
-            text: 'INSERT INTO songs(id, title, year, genre, performer, duration, albumid, created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
+            text: 'INSERT INTO songs(id, title, year, genre, performer, duration, album_id, created_at, updated_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
             values: [id, title, year, genre, performer, duration, albumId, created_at, updated_at],
         };
 
@@ -79,9 +76,8 @@ class SongsService {
 
 
     async getAlbumWithSongById(id) {
-
         const query = {
-            text: 'SELECT * FROM songs WHERE albumid = $1',
+            text: 'SELECT * FROM songs WHERE album_id = $1',
             values: [id],
         };
         const result = await this._pool.query(query);
@@ -99,13 +95,13 @@ class SongsService {
         return songs;
     }
 
-    async updateSongById(id, { title, year, genre, performer, duration }) {
+    async updateSongById({ id, title, year, genre, performer, duration }) {
         const updated_at = new Date().toISOString();
-        const albumid = id;
+
 
         const query = {
-            text: 'UPDATE songs SET title = $2, year = $3, genre = $4, performer = $5, duration = $6, albumid = $7, updated_at = $8 WHERE id = $1 RETURNING id',
-            values: [id, title, year, genre, performer, duration, albumid, updated_at],
+            text: 'UPDATE songs SET title = $2, year = $3, genre = $4, performer = $5, duration = $6, updated_at = $7 WHERE id = $1 RETURNING id',
+            values: [id, title, year, genre, performer, duration, updated_at],
         };
 
         const result = await this._pool.query(query);

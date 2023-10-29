@@ -30,12 +30,12 @@ class AlbumService {
     }
 
 
-    async getAllAlbums(owner) {
+    async getAllAlbums() {
         // const result = await this._pool.query('SELECT * FROM albums');
         // return result.rows.map(mapDBToModel);
         const query = {
-            text: 'SELECT * FROM albums WHERE owner = $1',
-            values: [owner],
+            text: 'SELECT * FROM albums',
+            values: [],
         };
         const result = await this._pool.query(query);
         return result.rows.map(mapDBToModel);
