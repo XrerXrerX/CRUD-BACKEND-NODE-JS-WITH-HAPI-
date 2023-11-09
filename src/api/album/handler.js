@@ -1,9 +1,9 @@
 class AlbumHandler {
-    constructor(service, validator, songsService) {
+    constructor(service, validator, songsService, cacheService) {
         this._service = service;
         this._validator = validator;
         this._songsService = songsService;
-
+        this._cacheService = cacheService;
     }
 
     postAlbumHandler = async (request, h) => {
@@ -30,6 +30,39 @@ class AlbumHandler {
             return response;
         }
     }
+    postAlbumLikesHandler = async (request, h) => {
+        const authId = request.auth.credentials.id;
+        const { id } = request.params;
+        await this._service.checklike({ authId, id });
+        await this._service.addlike({ authId, id });
+
+        const response = h.response({
+            status: 'success',
+            message: 'anda menyukai album ini sudah dimasukan dalam list'
+        });
+        response.code(201);
+        return response;
+    }
+
+
+    GetAlbumLikesHandler = async (request, h) => {
+        const { id } = request.params;
+        const tcount = await this._service.countlike({ id });
+        const response = h.response({
+            status: 'success',
+            data: {
+                likes: tcount.data
+            },
+        });
+        response.code(200);
+        if (tcount.headers) {
+            response.headers = {
+                'X-Data-Source': 'cache',
+            };
+        }
+
+        return response;
+    }
 
     getAllAlbumsHandler = async (request, h) => {
         // const { id: credentialId } = request.auth.credentials;
@@ -52,6 +85,15 @@ class AlbumHandler {
         response.code(200);
         return response;
     }
+    // getimagealbums = async (request, h) => {
+
+    //     let path = 'plain.txt';
+    //     if (request.headers['x-magic'] === 'sekret') {
+    //         path = 'awesome.png';
+    //     }
+
+    //     return h.file(path).vary('x-magic');
+    // }
 
     getAlbumByIdHandler = async (request, h) => {
         try {
@@ -59,13 +101,16 @@ class AlbumHandler {
             // const { id: credentialId } = request.auth.credentials;
             // await this._service.verifyNoteOwner(id, credentialId);
             const album = await this._service.getAlbumById(id);
+            if (album.hasOwnProperty("coverurl")) {
+                album.coverUrl = album.coverurl;
+                delete album.coverurl;
+            }
             // const songs = await songService.getSongsByAlbumId(albumId);
             const song = await this._songsService.getAlbumWithSongById(id);
             const songs = {
                 ...album,
                 songs: song || [], // Masukkan data lagu ke dalam properti songs
             };
-
             const response = h.response({
                 status: 'success',
                 data: {
@@ -117,6 +162,19 @@ class AlbumHandler {
             response.code(error.statusCode);
             return response;
         }
+    }
+
+    deleteAlbumLikesHandler = async (request, h) => {
+        const authId = request.auth.credentials.id;
+        const { id } = request.params;
+        await this._service.deletelike({ authId, id });
+
+        const response = h.response({
+            status: 'success',
+            message: 'anda sudah tidak menyukai album ini'
+        });
+        response.code(200);
+        return response;
     }
 
 

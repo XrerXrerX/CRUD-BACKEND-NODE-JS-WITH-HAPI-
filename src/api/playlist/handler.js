@@ -8,16 +8,10 @@ class PlaylistHandler {
     }
 
     postPlaylistHandler = async (request, h) => {
-
-
         this._validator.validatePlaylistPayload(request.payload);
         const { name } = request.payload;
         const authId = request.auth.credentials.id;
-
-
         const playlistId = await this._service.addPlaylist(name, authId);
-
-
         const response = h.response({
             status: 'success',
             data: {
@@ -75,8 +69,6 @@ class PlaylistHandler {
             response.code(403);
             return response;
         }
-
-
         const songIds = getplaylist[0].songs;
         if (songIds === 0) {
             const response = h.response({
